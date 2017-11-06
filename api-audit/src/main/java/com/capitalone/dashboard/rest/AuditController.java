@@ -9,12 +9,14 @@ import com.capitalone.dashboard.request.JobReviewRequest;
 import com.capitalone.dashboard.request.PeerReviewRequest;
 import com.capitalone.dashboard.request.QualityProfileValidationRequest;
 import com.capitalone.dashboard.request.StaticAnalysisRequest;
+import com.capitalone.dashboard.request.TestAutomationJobReviewRequest;
 import com.capitalone.dashboard.request.TestExecutionValidationRequest;
 import com.capitalone.dashboard.response.CodeQualityProfileValidationResponse;
 import com.capitalone.dashboard.response.DashboardReviewResponse;
 import com.capitalone.dashboard.response.JobReviewResponse;
 import com.capitalone.dashboard.response.PeerReviewResponse;
 import com.capitalone.dashboard.response.StaticAnalysisResponse;
+import com.capitalone.dashboard.response.TestAutomationJobReviewResponse;
 import com.capitalone.dashboard.response.TestResultsResponse;
 import com.capitalone.dashboard.service.AuditService;
 import com.capitalone.dashboard.util.GitHubParsedUrl;
@@ -178,6 +180,24 @@ public class AuditController {
 
 		testResultsResponse = auditService.getTestResultExecutionDetails(request.getJobUrl(),request.getBeginDate(),request.getEndDate());
 		return ResponseEntity.ok().body(testResultsResponse);
+	}
+	
+	
+	/**
+	 * Build Job Configuration Validation - All changes to the build job configuration are not made by a commit author in the same time range
+	 * 
+	 * @param request
+	 * @return
+	 */
+
+	@RequestMapping(value = "/testAutomationJobConfigurationReview", method = GET, produces = APPLICATION_JSON_VALUE)
+	public ResponseEntity<TestAutomationJobReviewResponse> validateTestAutomationJobConfigurationReview(TestAutomationJobReviewRequest request)
+			throws HygieiaException {
+
+		TestAutomationJobReviewResponse testAutomationJobReviewResponse;
+
+		testAutomationJobReviewResponse = auditService.getJobConfigurationReviewDetails(request.getJobUrl(),request.getJobName(),request.getRepo(),request.getBranch(),request.getBeginDate(),request.getEndDate());
+		return ResponseEntity.ok().body(testAutomationJobReviewResponse);
 	}
 
 }

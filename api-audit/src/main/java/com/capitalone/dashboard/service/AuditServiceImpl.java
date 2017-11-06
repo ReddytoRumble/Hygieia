@@ -40,6 +40,7 @@ import com.capitalone.dashboard.response.DashboardReviewResponse;
 import com.capitalone.dashboard.response.JobReviewResponse;
 import com.capitalone.dashboard.response.PeerReviewResponse;
 import com.capitalone.dashboard.response.StaticAnalysisResponse;
+import com.capitalone.dashboard.response.TestAutomationJobReviewResponse;
 import com.capitalone.dashboard.response.TestResultsResponse;
 import com.capitalone.dashboard.util.GitHubParsedUrl;
 import org.apache.commons.collections.CollectionUtils;
@@ -310,12 +311,22 @@ public class AuditServiceImpl implements AuditService {
 		
 		List<CollectorItem> testItems = this.getCollectorItems(dashboard, "test", CollectorType.Test);
 
+        List<CollItemCfgHist> testAutomationjobConfigHists = null;
 		if (testItems != null && !testItems.isEmpty()) {
 			dashboardReviewResponse.addAuditStatus(AuditStatus.DASHBOARD_TEST_CONFIGURED);
 			for (CollectorItem testItem : testItems){
 				List<TestResult> testResults = getTestResults((String)testItem.getOptions().get("jobUrl"),beginDate,endDate);
 				TestResultsResponse testResultsResponse = this.regressionTestResultAudit(testResults);
 				dashboardReviewResponse.setTestResultsResponse(testResultsResponse);
+				
+				String jobUrl = (String)testItem.getOptions().get("jobUrl");
+	            String jobName = (String)testItem.getOptions().get("jobName");
+	            
+	            testAutomationjobConfigHists = this.getCollItemCfgHist(jobUrl, jobName, beginDate, endDate);
+	            if(commits != null && testAutomationjobConfigHists != null){
+		            TestAutomationJobReviewResponse testAutomationJobReviewResponse = this.testAutomationJobReviewAudit(commits,testAutomationjobConfigHists);
+		            dashboardReviewResponse.setTestAutomationJobReviewResponse(testAutomationJobReviewResponse);
+	            }
 			}
 
 		} else {
@@ -700,6 +711,57 @@ public class AuditServiceImpl implements AuditService {
 
 	}
 	
+	public 	TestAutomationJobReviewResponse getJobConfigurationReviewDetails(String jobUrl, String jobName,String repo, String branch,long beginDate, long endDate){
+		List<Commit> commits = this.getCommits(repo,branch,beginDate,endDate);
+		List<CollItemCfgHist> jobConfigChanges = this.getCollItemCfgHist(jobUrl, jobName, beginDate, endDate);
+		
+		TestAutomationJobReviewResponse testAutomationJobReviewResponse = testAutomationJobReviewAudit(commits,jobConfigChanges);
+		return testAutomationJobReviewResponse;	
+	}
+	
+	private TestAutomationJobReviewResponse testAutomationJobReviewAudit(List<Commit> commits,
+		List<CollItemCfgHist> jobConfigChanges) {
+		
+		TestAutomationJobReviewResponse testAutomationJobReviewResponse = new TestAutomationJobReviewResponse();
+		
+		Set<String> authors = new HashSet<String>();
+		Set<String> jobConfigChangePerformers = new HashSet<String>();
+		
+		for (Commit commit : commits) {
+			authors.add(commit.getScmAuthor());
+		}
+		
+		// If no change has been made to quality profile between the time range,
+		// then return an audit status of no change
+		// Need to differentiate between document not being found and whether
+		// there was no change for the quality profile
+		if (CollectionUtils.isEmpty(jobConfigChanges)) {
+			testAutomationJobReviewResponse.addAuditStatus(AuditStatus.TEST_AUTOMATION_JOB_CONFIGURATION_NO_CHANGE);
+		} else {
+			
+			for (CollItemCfgHist jobConfigChange : jobConfigChanges) {
+				String jobConfigChangePerformer = jobConfigChange.getUserID();
+				jobConfigChangePerformers.add(jobConfigChangePerformer);
+			
+				// TODO Improve this check as it is inefficient
+				// If the change performer matches a commit author, then fail
+				// the audit
+				if (authors.contains(jobConfigChangePerformer)) {
+					testAutomationJobReviewResponse.addAuditStatus(AuditStatus.TEST_AUTOMATION_JOB_CONFIGURATION_REVIEW_FAIL);
+				}			
+			}
+			Set<AuditStatus> auditStatuses = testAutomationJobReviewResponse.getAuditStatuses();
+			if (!(auditStatuses.contains(AuditStatus.TEST_AUTOMATION_JOB_CONFIGURATION_REVIEW_FAIL))) {
+				testAutomationJobReviewResponse.addAuditStatus(AuditStatus.TEST_AUTOMATION_JOB_CONFIGURATION_REVIEW_PASS);
+			}
+			testAutomationJobReviewResponse.setJobConfigurationChangePerformers(jobConfigChangePerformers);
+		}
+		
+		testAutomationJobReviewResponse.setCommitAuthors(authors);
+		
+		return testAutomationJobReviewResponse;
+	}
+
 	/**
 	 * Reusable method for constructing the StaticAnalysisResponse object for a
 	 * 

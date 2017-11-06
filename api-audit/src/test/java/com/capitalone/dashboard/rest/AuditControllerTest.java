@@ -11,6 +11,7 @@ import com.capitalone.dashboard.request.JobReviewRequest;
 import com.capitalone.dashboard.request.PeerReviewRequest;
 import com.capitalone.dashboard.request.QualityProfileValidationRequest;
 import com.capitalone.dashboard.request.StaticAnalysisRequest;
+import com.capitalone.dashboard.request.TestAutomationJobReviewRequest;
 import com.capitalone.dashboard.request.TestExecutionValidationRequest;
 import com.capitalone.dashboard.response.CodeQualityProfileValidationResponse;
 import com.capitalone.dashboard.response.StaticAnalysisResponse;
@@ -211,5 +212,32 @@ public class AuditControllerTest {
     	mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON))
     	.andExpect(status().isOk());
     }
+    
+    @Test
+    public void validateTestAutomationJobConfigurationReview() throws Exception {
+    	// Request
+    	String jobUrl = "https://jenkins.Hygieia.com";
+    	String jobName = "hygieiatest";
+    	String repo = "github.com/hygieia";
+    	String branch= "master";
+    	
+    	long beginDate = 1478136705000l;
+    	long endDate = 1497465958000l;
+    	
+    	TestAutomationJobReviewRequest request = new TestAutomationJobReviewRequest();
+    	request.setBeginDate(beginDate);
+    	request.setEndDate(endDate);
+    	request.setJobUrl(jobUrl);
+    	
+    	TestResultsResponse response = new TestResultsResponse();
+    	
+    	when(auditService.getTestResultExecutionDetails(jobUrl,beginDate,endDate)).thenReturn(response);
+    	
+    	String requestUrl= "/testAutomationJobConfigurationReview" + "?jobUrl=" + jobUrl +"&jobName=" + jobName + "&repo=" + repo + "&branch=" + branch +"&beginDate=" + beginDate + "&endDate=" + endDate;
+    	
+    	mockMvc.perform(get(requestUrl).contentType(MediaType.APPLICATION_JSON))
+    	.andExpect(status().isOk());
+    }
+    
     
 }

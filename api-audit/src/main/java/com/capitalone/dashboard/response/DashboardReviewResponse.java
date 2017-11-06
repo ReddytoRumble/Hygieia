@@ -14,7 +14,8 @@ public class DashboardReviewResponse extends AuditReviewResponse {
 	CodeQualityProfileValidationResponse codeQualityProfileValidationResponse;
 	
 	TestResultsResponse testResultsResponse;
-
+	
+	TestAutomationJobReviewResponse testAutomationJobReviewResponse;
 
 	public String getDashboardTitle() {
         return dashboardTitle;
@@ -64,6 +65,14 @@ public class DashboardReviewResponse extends AuditReviewResponse {
 
 	public void setTestResultsResponse(TestResultsResponse testResultsResponse) {
 		this.testResultsResponse = testResultsResponse;
+	}
+	
+	public TestAutomationJobReviewResponse getTestAutomationJobReviewResponse() {
+		return testAutomationJobReviewResponse;
+	}
+
+	public void setTestAutomationJobReviewResponse(TestAutomationJobReviewResponse testAutomationJobReviewResponse) {
+		this.testAutomationJobReviewResponse = testAutomationJobReviewResponse;
 	}
 
 	
